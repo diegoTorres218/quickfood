@@ -10,25 +10,28 @@ export default function SelectPaymentScreen({ navigation, route }) {
 
       <Text style={styles.title}>Selecciona un método de pago</Text>
 
+      {/* TARJETA */}
       <TouchableOpacity
         style={styles.option}
         onPress={() =>
-          navigation.navigate("Payment", {
-            cartTotal,
+          navigation.navigate("Receipt", {
             items,
+            cartTotal,
+            method: "card",
           })
         }
       >
         <Text style={styles.optionText}>💳 Tarjeta</Text>
       </TouchableOpacity>
 
+      {/* EFECTIVO */}
       <TouchableOpacity
         style={[styles.option, { backgroundColor: "#333" }]}
         onPress={() =>
           navigation.navigate("Receipt", {
-            method: "cash",
-            cartTotal,
             items,
+            cartTotal,
+            method: "cash",
           })
         }
       >
