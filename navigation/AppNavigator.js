@@ -1,18 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-
 import { useCart } from '../context/CartContext';
+import { supabase } from '../utils/supabase';
 
 // SCREENS
 import CartScreen from '../screens/CartScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import DetailsScreen from '../screens/DetailsScreen';
 import HistoryScreen from '../screens/HistoryScreen';
-import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MenuScreen from '../screens/MenuScreen';
 import PedidoEnCaminoScreen from '../screens/PedidoEnCaminoScreen';
@@ -20,9 +18,8 @@ import PedidoEntregadoScreen from '../screens/PedidoEntregadoScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ReceiptScreen from '../screens/ReceiptScreen';
-import RegisterScreen from "../screens/RegisterScreen";
+import RegisterScreen from '../screens/RegisterScreen';
 import SelectPaymentScreen from '../screens/SelectPaymentScreen';
-
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,20 +28,23 @@ const Tab = createBottomTabNavigator();
    TABS
 ========================= */
 function Tabs() {
-  const { getItemCount } = useCart();   // ✔ ahora sí funciona
+  const { getItemCount } = useCart();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-
         tabBarStyle: {
           backgroundColor: '#fff',
           height: 65,
           borderTopWidth: 0,
           elevation: 10,
         },
-
         tabBarActiveTintColor: '#FF6B00',
         tabBarInactiveTintColor: '#9CA3AF',
 
@@ -86,55 +86,72 @@ function Tabs() {
     >
       <Tab.Screen name="Menu" component={MenuScreen} />
       <Tab.Screen name="Cart" component={CartScreen} />
-      <Tab.Screen name="Perfil" component={ProfileScreen} />
+
+      {!user ? (
+        <Tab.Screen name="Perfil" component={LoginScreen} />
+      ) : (
+        <Tab.Screen name="Perfil" component={ProfileScreen} />
+      )}
     </Tab.Navigator>
   );
 }
 
 /* =========================
-   STACK PRINCIPAL
+   AUTH STACK
+========================= */
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="History" component={HistoryScreen} />
+    </Stack.Navigator>
+  );
+}
+
+/* =========================
+   APP STACK
 ========================= */
 export default function AppNavigator() {
-
+  const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+
+    const listener = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => listener.data.subscription.unsubscribe();
+  }, []);
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
 
-        <Stack.Screen name="Home" component={HomeScreen} />
+      {!user ? (
+        <Stack.Screen name="Auth" component={AuthStack} />
+      ) : (
         <Stack.Screen name="MainTabs" component={Tabs} />
+      )}
 
-        <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-        <Stack.Screen name="Checkout" component={CheckoutScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Details" component={DetailsScreen} />
-        <Stack.Screen name="PedidoEnCamino" component={PedidoEnCaminoScreen} />
-        <Stack.Screen name="PedidoEntregado" component={PedidoEntregadoScreen} />
-        <Stack.Screen name="SelectPayment" component={SelectPaymentScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="Details" component={DetailsScreen} />
+      <Stack.Screen name="PedidoEnCamino" component={PedidoEnCaminoScreen} />
+      <Stack.Screen name="PedidoEntregado" component={PedidoEntregadoScreen} />
+      <Stack.Screen name="SelectPayment" component={SelectPaymentScreen} />
 
+      <Stack.Screen name="Receipt">
+        {(props) => (
+          <ReceiptScreen {...props} orders={orders} setOrders={setOrders} />
+        )}
+      </Stack.Screen>
 
-        <Stack.Screen name="Receipt">
-          {(props) => (
-            <ReceiptScreen
-              {...props}
-              orders={orders}
-              setOrders={setOrders}
-            />
-          )}
-        </Stack.Screen>
+      <Stack.Screen name="History">
+        {(props) => <HistoryScreen {...props} orders={orders} />}
+      </Stack.Screen>
 
-        <Stack.Screen name="History">
-          {(props) => (
-            <HistoryScreen
-              {...props}
-              orders={orders}
-            />
-          )}
-        </Stack.Screen>
-
-      </Stack.Navigator>
-    </NavigationContainer>
+    </Stack.Navigator>
   );
 }
