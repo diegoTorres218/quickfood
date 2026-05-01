@@ -1,15 +1,25 @@
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackButton from "../components/BackButton";
-import { useAuth } from "../context/AuthContext"; // 👈 Para obtener user.id
 import { useCart } from "../context/CartContext";
-import { supabase } from "../utils/supabase"; // 👈 IMPORTACIÓN CORRECTA
+import { supabase } from "../utils/supabase";
 
-export default function ReceiptScreen({ route, navigation, orders, setOrders }) {
+export default function ReceiptScreen({ route, navigation }) {
   const { items = [], cartTotal = 0, method = "card" } = route.params || {};
   const { clearCart } = useCart();
-  const { user } = useAuth();
 
-  // Cálculos
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    loadUser();
+  }, []);
+
+  if (!user) return null;
+
   const subtotal = cartTotal;
   const stateTax = subtotal * 0.105;
   const reducedTax = subtotal * 0.06;
@@ -23,19 +33,7 @@ export default function ReceiptScreen({ route, navigation, orders, setOrders }) 
   const date = new Date().toLocaleString();
 
   const handleContinue = async () => {
-    const newOrder = {
-      id: orderId,
-      date,
-      items,
-      total,
-      method,
-    };
-
-    // ⭐ 1. Guardar en estado local
-    setOrders([newOrder, ...orders]);
-
-    // ⭐ 2. Guardar en Supabase
-    const { error } = await supabase.from("orders").insert([
+    await supabase.from("orders").insert([
       {
         user_id: user.id,
         items,
@@ -46,16 +44,8 @@ export default function ReceiptScreen({ route, navigation, orders, setOrders }) 
       },
     ]);
 
-    if (error) {
-      console.log("❌ Error guardando orden:", error);
-    } else {
-      console.log("✅ Orden guardada en Supabase");
-    }
-
-    // ⭐ 3. Limpiar carrito
     clearCart();
 
-    // ⭐ 4. Navegar con datos correctos
     navigation.navigate("PedidoEnCamino", {
       method,
       cartTotal: total,
@@ -96,9 +86,7 @@ export default function ReceiptScreen({ route, navigation, orders, setOrders }) 
         <Text>Total Tax: ${totalTax.toFixed(2)}</Text>
         <Text style={styles.total}>Total a pagar: ${total.toFixed(2)}</Text>
 
-        <Text>
-          Método: {method === "card" ? "Tarjeta" : "Efectivo"}
-        </Text>
+        <Text>Método: {method === "card" ? "Tarjeta" : "Efectivo"}</Text>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleContinue}>
