@@ -1,35 +1,27 @@
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import BackButton from "../components/BackButton";
+import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabase";
 
-export default function HistoryScreen() {
+export default function HistoryScreen({ navigation }) {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
+    const loadOrders = async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (!error) {
-        setOrders(data);
-      }
-
+      if (!error) setOrders(data);
       setLoading(false);
     };
 
-    fetchOrders();
+    loadOrders();
   }, []);
 
   if (loading) {
@@ -40,96 +32,68 @@ export default function HistoryScreen() {
     );
   }
 
-  if (orders.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.empty}>No tienes pedidos aún 🛒</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📦 Historial de pedidos</Text>
+      <BackButton navigation={navigation} />
+      <Text style={styles.title}>Historial de Órdenes</Text>
 
-      <FlatList
-        data={orders}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.date}>
-              {new Date(item.created_at).toLocaleString()}
-            </Text>
-
-            <Text style={styles.text}>
-              Método: {item.method === "card" ? "Tarjeta 💳" : "Efectivo 💵"}
-            </Text>
-
-            <Text style={styles.text}>
-              Total: ${Number(item.total).toFixed(2)}
-            </Text>
-
-            <Text style={styles.itemsTitle}>Items:</Text>
-
-            {item.items?.map((p, index) => (
-              <Text key={index} style={styles.item}>
-                {p.name} x{p.qty}
+      {orders.length === 0 ? (
+        <Text style={styles.empty}>No tienes órdenes todavía.</Text>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(item) => item.order_number.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() =>
+                navigation.navigate("PedidoEnCamino", {
+                  method: item.method,
+                  cartTotal: item.total,
+                  items: item.items,
+                  orderId: item.order_number,
+                  date: item.created_at,
+                })
+              }
+            >
+              <Text style={styles.orderId}>Orden #{item.order_number}</Text>
+              <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
+              <Text style={styles.total}>Total: ${item.total.toFixed(2)}</Text>
+              <Text style={styles.method}>
+                Método: {item.method === "card" ? "Tarjeta 💳" : "Efectivo 💵"}
               </Text>
-            ))}
-          </View>
-        )}
-      />
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF8EE",
-    padding: 20,
-  },
-
+  container: { flex: 1, backgroundColor: "#FFF8EE", padding: 20 },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "900",
     color: "#FF6B00",
     textAlign: "center",
     marginBottom: 20,
   },
-
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 2,
-  },
-
-  date: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 5,
-  },
-
-  text: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-
-  itemsTitle: {
-    marginTop: 10,
-    fontWeight: "bold",
-  },
-
-  item: {
-    fontSize: 14,
-    color: "#444",
-  },
-
   empty: {
     textAlign: "center",
-    fontSize: 18,
-    marginTop: 50,
+    marginTop: 40,
+    fontSize: 16,
+    color: "#555",
   },
+  card: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 15,
+    elevation: 3,
+  },
+  orderId: { fontSize: 18, fontWeight: "bold" },
+  date: { fontSize: 14, color: "#666", marginBottom: 5 },
+  total: { fontSize: 16, fontWeight: "bold", color: "#FF6B00" },
+  method: { fontSize: 14, marginTop: 5 },
 });
