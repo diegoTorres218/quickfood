@@ -2,10 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function PedidoEntregadoScreen({ route, navigation }) {
-  const { items = [], total = 0 } = route.params || {};
-
-  const orderNumber = Math.floor(100000 + Math.random() * 900000);
-  const date = new Date().toLocaleString();
+  const {
+    items = [],
+    cartTotal = 0,
+    method = "card",
+    orderId,
+    date
+  } = route.params || {};
 
   return (
     <ScrollView style={styles.container}>
@@ -25,7 +28,7 @@ export default function PedidoEntregadoScreen({ route, navigation }) {
       <View style={styles.receipt}>
         <Text style={styles.receiptTitle}>Recibo del Pedido</Text>
 
-        <Text style={styles.receiptLine}>Número de pedido: #{orderNumber}</Text>
+        <Text style={styles.receiptLine}>Número de pedido: #{orderId}</Text>
         <Text style={styles.receiptLine}>Fecha: {date}</Text>
 
         <View style={styles.divider} />
@@ -41,16 +44,18 @@ export default function PedidoEntregadoScreen({ route, navigation }) {
 
         <View style={styles.receiptItem}>
           <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalAmount}>${total.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>${cartTotal.toFixed(2)}</Text>
         </View>
 
-        <Text style={styles.paymentMethod}>Método de pago: Tarjeta</Text>
+        <Text style={styles.paymentMethod}>
+          Método de pago: {method === "card" ? "Tarjeta 💳" : "Efectivo 💵"}
+        </Text>
       </View>
 
       {/* Botón */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate("Home")}
+        onPress={() => navigation.navigate("MainTabs")}
       >
         <Text style={styles.buttonText}>Volver a comprar</Text>
       </TouchableOpacity>
