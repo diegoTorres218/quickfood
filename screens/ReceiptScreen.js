@@ -10,6 +10,7 @@ export default function ReceiptScreen({ route, navigation }) {
 
   const [user, setUser] = useState(null);
 
+  // Cargar usuario REAL de Supabase
   useEffect(() => {
     const loadUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -18,8 +19,16 @@ export default function ReceiptScreen({ route, navigation }) {
     loadUser();
   }, []);
 
-  if (!user) return null;
+  // Loader para evitar pantalla vacía
+  if (!user) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Cargando...</Text>
+      </View>
+    );
+  }
 
+  // Cálculos
   const subtotal = cartTotal;
   const stateTax = subtotal * 0.105;
   const reducedTax = subtotal * 0.06;
@@ -29,29 +38,36 @@ export default function ReceiptScreen({ route, navigation }) {
   const totalTax = stateTax + reducedTax + municipalTax;
   const total = subtotal + totalTax;
 
-  const orderId = Math.floor(Math.random() * 9000) + 1000;
-  const date = new Date().toLocaleString();
-
   const handleContinue = async () => {
-    await supabase.from("orders").insert([
+    console.log("handleContinue ejecutado");
+
+    const order_number = Math.floor(100000 + Math.random() * 900000);
+    const created_at = new Date().toISOString();
+
+    const { error } = await supabase.from("orders").insert([
       {
         user_id: user.id,
         items,
         total,
         method,
-        order_number: orderId,
-        created_at: new Date(),
-      },
+        order_number,
+        created_at,
+      }
     ]);
+
+    if (error) {
+      console.log("ERROR GUARDANDO ORDEN:", JSON.stringify(error, null, 2));
+      // seguimos navegando
+    }
 
     clearCart();
 
     navigation.navigate("PedidoEnCamino", {
-      method,
-      cartTotal: total,
       items,
-      orderId,
-      date,
+      cartTotal: total,
+      method,
+      orderId: order_number,
+      date: created_at,
     });
   };
 
@@ -62,19 +78,6 @@ export default function ReceiptScreen({ route, navigation }) {
       <Text style={styles.title}>🧾 Recibo</Text>
 
       <View style={styles.card}>
-        <Text>Orden #{orderId}</Text>
-        <Text>{date}</Text>
-
-        <View style={styles.separator} />
-
-        {items.map((item, i) => (
-          <Text key={i}>
-            {item.name} x{item.qty} - ${(item.price * item.qty).toFixed(2)}
-          </Text>
-        ))}
-
-        <View style={styles.separator} />
-
         <Text>Subtotal: ${subtotal.toFixed(2)}</Text>
         <Text>State Tax (10.5%): ${stateTax.toFixed(2)}</Text>
         <Text>Reduced State Tax (6%): ${reducedTax.toFixed(2)}</Text>
@@ -89,7 +92,13 @@ export default function ReceiptScreen({ route, navigation }) {
         <Text>Método: {method === "card" ? "Tarjeta" : "Efectivo"}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleContinue}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          console.log("CLICK EN CONTINUAR");
+          handleContinue();
+        }}
+      >
         <Text style={styles.buttonText}>Continuar</Text>
       </TouchableOpacity>
     </ScrollView>
