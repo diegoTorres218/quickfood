@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackButton from "../components/BackButton";
-import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabase";
 
 export default function HistoryScreen({ navigation }) {
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Cargar usuario REAL de Supabase
   useEffect(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    loadUser();
+  }, []);
+
+  // Cargar órdenes cuando user esté listo
+  useEffect(() => {
+    if (!user) return;
+
     const loadOrders = async () => {
+      console.log("USER ID EN HISTORY:", user.id);
+
       const { data, error } = await supabase
         .from("orders")
         .select("*")
@@ -22,9 +35,9 @@ export default function HistoryScreen({ navigation }) {
     };
 
     loadOrders();
-  }, []);
+  }, [user]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <View style={styles.container}>
         <Text>Cargando historial...</Text>
