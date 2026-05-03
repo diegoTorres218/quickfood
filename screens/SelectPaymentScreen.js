@@ -9,7 +9,6 @@ export default function SelectPaymentScreen({ navigation, route }) {
       <BackButton navigation={navigation} />
 
       <Text style={styles.title}>Selecciona un método de pago</Text>
-
       {/* TARJETA */}
       <TouchableOpacity
         style={styles.option}
