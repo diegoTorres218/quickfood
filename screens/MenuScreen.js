@@ -4,12 +4,12 @@ import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } 
 import { useCart } from '../context/CartContext';
 
 const menuItems = [
-  { id: 1, name: "Hamburguesa Clásica", category: "Comida", price: 8.99, image: "https://images.unsplash.com/photo-1550547660-d9450f859349" },
-  { id: 2, name: "Pizza Margherita", category: "Comida", price: 12.99, image: "https://images.unsplash.com/photo-1601924582971-df56b1b1a1a1" },
-  { id: 3, name: "Coca-Cola", category: "Bebidas", price: 2.99, image: "https://images.unsplash.com/photo-1581091215367-59ab6b7a7b1f" },
-  { id: 4, name: "Jugo Natural", category: "Bebidas", price: 3.99, image: "https://images.unsplash.com/photo-1572449043416-55f4685c9bb7" },
-  { id: 5, name: "Cake", category: "Postres", price: 5.99, image: "https://images.unsplash.com/photo-1601972599720-36938d4ecd31" },
-  { id: 6, name: "Helado", category: "Postres", price: 4.99, image: "https://images.unsplash.com/photo-1589712235278-9b2d6b9d3b0c" },
+  { id: 1, name: "Hamburguesa Clásica", category: "Comida", price: 8.99, image: "https://www.pexels.com/photo/ham-burger-with-vegetables-1639557/" },
+  { id: 2, name: "Pizza Margherita", category: "Comida", price: 12.99, image: "https://www.pexels.com/photo/pizza-with-cheese-and-green-leaves-12096782/" },
+  { id: 3, name: "Coca-Cola", category: "Bebidas", price: 2.99, image: "https://www.pexels.com/photo/red-and-silver-soda-cans-on-red-surface-36899701/" },
+  { id: 4, name: "Jugos Naturales", category: "Bebidas", price: 3.99, image: "https://www.pexels.com/photo/drinking-glasses-with-fruit-juice-10153721/" },
+  { id: 5, name: "Bizcocho de chocolate", category: "Postres", price: 5.99, image: "https://www.pexels.com/photo/delicious-chocolate-layer-cake-slice-on-plate-30699756/" },
+  { id: 6, name: "Helado", category: "Postres", price: 4.99, image: "https://www.pexels.com/photo/a-close-up-shot-of-ice-cream-in-a-cup-6552121/" },
 ];
 
 export default function MenuScreen() {
