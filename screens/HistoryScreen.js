@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackButton from "../components/BackButton";
 import { supabase } from "../utils/supabase";
@@ -17,24 +18,55 @@ export default function HistoryScreen({ navigation }) {
     loadUser();
   }, []);
 
+  // Función para cargar órdenes
+  const loadOrders = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error) {
+      setOrders(data);
+    }
+
+    setLoading(false); // 👈 IMPORTANTE
+  };
+
   // Cargar órdenes cuando user esté listo
+  useEffect(() => {
+    if (user) loadOrders();
+  }, [user]);
+
+  // Recargar historial cuando regreses a esta pantalla
+  useFocusEffect(
+    useCallback(() => {
+      if (user) loadOrders();
+    }, [user])
+  );
+
+  // 🔥 Escuchar nuevas órdenes en tiempo real
   useEffect(() => {
     if (!user) return;
 
-    const loadOrders = async () => {
-      console.log("USER ID EN HISTORY:", user.id);
+    const channel = supabase
+      .channel("orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          if (payload.new.user_id === user.id) {
+            setOrders((prev) => [payload.new, ...prev]);
+          }
+        }
+      )
+      .subscribe();
 
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error) setOrders(data);
-      setLoading(false);
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    loadOrders();
   }, [user]);
 
   if (loading || !user) {
