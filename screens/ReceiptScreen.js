@@ -10,14 +10,16 @@ export default function ReceiptScreen({ route, navigation }) {
 
   const [user, setUser] = useState(null);
 
-  // Cargar usuario REAL de Supabase
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    loadUser();
-  }, []);
+ useEffect(() => {
+  const checkUser = async () => {
+    const { data } = await supabase.auth.getUser();
+    console.log("USER EN RECEIPT:", data.user);
+    setUser(data.user); // 👈 ESTO ES LO QUE FALTABA
+  };
+  checkUser();
+}, []);
+
+
 
   // Loader para evitar pantalla vacía
   if (!user) {
@@ -30,46 +32,52 @@ export default function ReceiptScreen({ route, navigation }) {
 
   // Cálculos
   const subtotal = cartTotal;
-  const stateTax = subtotal * 0.105;
+  const ivu = subtotal * 0.06;
   const reducedTax = subtotal * 0.06;
   const municipalTax = subtotal * 0.01;
   const iva = 0;
 
-  const totalTax = stateTax + reducedTax + municipalTax;
+  const totalTax = ivu + reducedTax + municipalTax;
   const total = subtotal + totalTax;
 
-  const handleContinue = async () => {
-    console.log("handleContinue ejecutado");
+ const handleContinue = async () => {
+  console.log("handleContinue ejecutado");
 
-    const order_number = Math.floor(100000 + Math.random() * 900000);
-    const created_at = new Date().toISOString();
+  const order_number = Math.floor(100000 + Math.random() * 900000);
+  const created_at = new Date().toISOString();
 
-    const { error } = await supabase.from("orders").insert([
-      {
-        user_id: user.id,
-        items,
-        total,
-        method,
-        order_number,
-        created_at,
-      }
-    ]);
+  console.log("USER ID:", user?.id);
+  console.log("ITEMS:", items);
+  console.log("TOTAL:", total);
 
-    if (error) {
-      console.log("ERROR GUARDANDO ORDEN:", JSON.stringify(error, null, 2));
-      // seguimos navegando
-    }
-
-    clearCart();
-
-    navigation.navigate("PedidoEnCamino", {
+  const { data, error } = await supabase.from("orders").insert([
+    {
+      user_id: user.id,
       items,
-      cartTotal: total,
+      total,
       method,
-      orderId: order_number,
-      date: created_at,
-    });
-  };
+      order_number,
+      created_at,
+    }
+  ]);
+
+  if (error) {
+    console.log("❌ ERROR GUARDANDO ORDEN:", error);
+  } else {
+    console.log("✅ ORDEN GUARDADA:", data);
+  }
+
+  clearCart();
+
+  navigation.navigate("PedidoEnCamino", {
+    items,
+    cartTotal: total,
+    method,
+    orderId: order_number,
+    date: created_at,
+  });
+};
+
 
   return (
     <ScrollView style={styles.container}>
@@ -79,7 +87,7 @@ export default function ReceiptScreen({ route, navigation }) {
 
       <View style={styles.card}>
         <Text>Subtotal: ${subtotal.toFixed(2)}</Text>
-        <Text>State Tax (10.5%): ${stateTax.toFixed(2)}</Text>
+        <Text>IVU (6%): ${ivu.toFixed(2)}</Text>
         <Text>Reduced State Tax (6%): ${reducedTax.toFixed(2)}</Text>
         <Text>Municipal Tax (1%): ${municipalTax.toFixed(2)}</Text>
         <Text>IVA (0%): ${iva.toFixed(2)}</Text>
